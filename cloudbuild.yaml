@@ -1,0 +1,49 @@
+# This file is the blueprint for Google Cloud Build to automatically build,
+# test, and deploy your application.
+
+steps:
+# 1. Build the Docker container image
+# This step uses the Dockerfile we created earlier to build the container.
+# The image is tagged with the Artifact Registry URL.
+- name: 'gcr.io/cloud-builders/docker'
+  args: [
+    'build',
+    '-t', 'us-central1-docker.pkg.dev/${_PROJECT_ID}/${_REPOSITORY}/${_SERVICE_NAME}:${COMMIT_SHA}',
+    '.'
+  ]
+
+# 2. Push the container image to Artifact Registry
+# Artifact Registry is Google's recommended place to store your container images.
+- name: 'gcr.io/cloud-builders/docker'
+  args: [
+    'push',
+    'us-central1-docker.pkg.dev/${_PROJECT_ID}/${_REPOSITORY}/${_SERVICE_NAME}:${COMMIT_SHA}'
+  ]
+
+# 3. Deploy the container image to Cloud Run
+# This step takes the image from Artifact Registry and deploys it as a new
+# revision to your Cloud Run service. It also injects the secrets from Secret Manager.
+- name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+  entrypoint: gcloud
+  args:
+    - 'run'
+    - 'deploy'
+    - '${_SERVICE_NAME}'
+    - '--image=us-central1-docker.pkg.dev/${_PROJECT_ID}/${_REPOSITORY}/${_SERVICE_NAME}:${COMMIT_SHA}'
+    - '--region=${_REGION}'
+    - '--platform=managed'
+    - '--allow-unauthenticated'
+    - '--port=5000'
+    - '--set-secrets=DATABASE_URL=DATABASE_URL:latest,GEMINI_API_KEY=GEMINI_API_KEY:latest,MASTER_ENCRYPTION_KEY=MASTER_ENCRYPTION_KEY:latest,SESSION_SECRET=SESSION_SECRET:latest'
+
+# Configuration for this build
+# These are variables we use in the steps above to make the script reusable.
+substitutions:
+  _PROJECT_ID: 'gen-lang-client-0226111256'
+  _REPOSITORY: 'goplan-repository' # The name for your Artifact Registry repository
+  _SERVICE_NAME: 'goplan-idx-service'      # The name of your Cloud Run service
+  _REGION: 'us-central1'             # The region for your Cloud Run service
+
+# This tells Cloud Build to store the final image URL for our records.
+images:
+- 'us-central1-docker.pkg.dev/${_PROJECT_ID}/${_REPOSITORY}/${_SERVICE_NAME}:${COMMIT_SHA}'

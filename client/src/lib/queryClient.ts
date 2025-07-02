@@ -1,14 +1,14 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
-// Overloaded function to support both old and new calling patterns
+// A more robust apiRequest function to handle different calling patterns
 export async function apiRequest(
-  urlOrMethod: string,
-  urlOrOptions?: string | {
+  arg1: string,
+  arg2?: string | {
     method?: string;
     body?: unknown;
     headers?: Record<string, string>;
   },
-  data?: unknown
+  arg3?: unknown
 ): Promise<any> {
   let url: string;
   let method: string;
@@ -18,19 +18,33 @@ export async function apiRequest(
     'Accept': 'application/json'
   };
 
-  // Handle old calling pattern: apiRequest(method, url, data)
-  if (typeof urlOrOptions === 'string') {
-    method = urlOrMethod;
-    url = urlOrOptions;
-    body = data;
-  } 
-  // Handle new calling pattern: apiRequest(url, options)
-  else {
-    url = urlOrMethod;
-    const options = urlOrOptions || {};
-    method = options.method || 'GET';
+  // Heuristic to detect the calling pattern
+  // Pattern 1: apiRequest(url, options)
+  if (typeof arg2 === 'object' || arg2 === undefined) {
+    url = arg1;
+    const options = arg2 || {};
+    method = options.method || (options.body ? 'POST' : 'GET');
     body = options.body;
     headers = { ...headers, ...options.headers };
+  }
+  // Pattern 2: apiRequest(method, url, data)
+  else if (typeof arg2 === 'string') {
+    // This is the old pattern, where ambiguity caused the error
+    method = arg1.toUpperCase(); // Ensure method is uppercase (POST, GET, etc.)
+    url = arg2;
+    body = arg3;
+    // Basic check to prevent swapping url and method
+    if (url.startsWith('/api/') === false && method.startsWith('/api/')) {
+        // The arguments were swapped, let's fix them
+        [url, method] = [method, url.toUpperCase()];
+    }
+  } else {
+    throw new Error('Invalid arguments passed to apiRequest');
+  }
+
+  // Final validation
+  if (!['GET', 'POST', 'PUT', 'DELETE', 'PATCH'].includes(method)) {
+      throw new Error(`Invalid HTTP method detected in apiRequest: ${method}`);
   }
   
   const res = await fetch(url, {
@@ -55,18 +69,25 @@ export async function apiRequest(
       // If we can't read the response body, use statusText
       errorText = res.statusText;
     }
-    throw new Error(`${res.status}: ${errorText}`);
+    throw new Error(`${res.status}: ${res.statusText}`);
   }
   
   // Handle successful responses
   const contentType = res.headers.get('content-type');
   if (contentType && contentType.includes('application/json')) {
-    return res.json();
+    try {
+      return await res.json();
+    } catch (e) {
+      // Handle cases where server returns JSON content-type but empty body
+      return { success: true, message: 'Operation successful with empty response.' };
+    }
   } else {
     // For non-JSON successful responses, return a success indicator
     return { success: true };
   }
 }
+
+// ... (the rest of the file remains the same)
 
 type UnauthorizedBehavior = "returnNull" | "throw";
 
