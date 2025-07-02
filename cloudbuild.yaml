@@ -18,6 +18,9 @@ steps:
   ]
 
 # 3. Deploy the container image to Cloud Run
+# This step takes the image from Artifact Registry and deploys it as a new
+# revision to your Cloud Run service. It also injects the secrets and
+# establishes a secure connection to the Cloud SQL database.
 - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
   entrypoint: gcloud
   args:
@@ -30,6 +33,8 @@ steps:
     - '--allow-unauthenticated'
     - '--port=5000'
     - '--set-secrets=DATABASE_URL=DATABASE_URL:latest,GEMINI_API_KEY=GEMINI_API_KEY:latest,MASTER_ENCRYPTION_KEY=MASTER_ENCRYPTION_KEY:latest,SESSION_SECRET=SESSION_SECRET:latest'
+    # THE FIX: This line creates a secure, direct connection to the Cloud SQL instance.
+    - '--add-cloudsql-instances=gen-lang-client-0226111256:asia-southeast1:goplan-instance'
 
 # Configuration for this build
 substitutions:
@@ -44,7 +49,4 @@ images:
 
 # Options for the build
 options:
-  # This setting resolves the "Failed to trigger build" error by specifying
-  # that this build should use the standard Cloud Logging service and not
-  # a separate storage bucket for logs.
   logging: CLOUD_LOGGING_ONLY
