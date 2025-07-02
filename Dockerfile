@@ -11,7 +11,7 @@ RUN npm install
 COPY . .
 
 # Run the build script from package.json
-# This creates the production-ready server in /dist and the frontend in /client/dist
+# This creates the production-ready server in /dist and the frontend in /dist/public
 RUN npm run build
 
 # Stage 2: The Production Environment
@@ -26,9 +26,9 @@ RUN npm install --omit=dev
 # Copy the built server from the builder stage
 COPY --from=builder /app/dist ./dist
 
-# Copy the built client assets from the builder stage
-# The production server is configured to serve these files
-COPY --from=builder /app/client/dist ./client/dist
+# Correctly copy the built client assets from the location specified in vite.config.ts
+# The original path was /app/client/dist, but the build output is /app/dist/public
+COPY --from=builder /app/dist/public ./client/dist
 
 # Expose the port the server will run on
 EXPOSE 5000
