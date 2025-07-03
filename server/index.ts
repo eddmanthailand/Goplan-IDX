@@ -1,30 +1,32 @@
 import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { initializeDb } from './db'; // Import the async initializer
-import { registerRoutes } from './routes'; // Re-importing the routes
-import { createServer } from 'http'; // Needed for registerRoutes
+import { initializeDb } from './db';
+import createApiRouter from './routes'; // Import the router factory function
+import { createServer } from 'http'; // createServer is needed if registerRoutes returns it
 
 async function startServer() {
   try {
-    // 1. Initialize the database connection. This is now the first and most crucial step.
-    await initializeDb();
+    // 1. Initialize the database connection and get the db instance.
+    const db = await initializeDb();
     console.log('Database initialization complete.');
 
     const app = express();
     const isProduction = process.env.NODE_ENV === 'production';
-    const PORT = process.env.PORT || 5000; // Keep port 5000 as per original setup
+    const PORT = process.env.PORT || 5000;
 
-    // 2. Register all your existing API routes. 
-    // The `registerRoutes` function will now have access to an initialized database.
-    const server = await registerRoutes(app);
+    app.use(express.json());
+
+    // 2. Create the router by passing the db instance and use it.
+    const apiRouter = createApiRouter(db);
+    app.use('/api', apiRouter);
 
     // --- Static File Serving (for Production) ---
     if (isProduction) {
       const __filename = fileURLToPath(import.meta.url);
       const __dirname = path.dirname(__filename);
-      // Correcting the path to be relative to the current file's directory in the 'dist' folder
-      const clientBuildPath = path.join(__dirname, 'client/dist');
+      // The path should be relative to the built 'dist' folder
+      const clientBuildPath = path.join(__dirname, '../client/dist');
       
       console.log(`[Production] Serving static files from: ${clientBuildPath}`);
       app.use(express.static(clientBuildPath));
@@ -36,6 +38,7 @@ async function startServer() {
     }
 
     // 3. Start listening only after everything is set up
+    const server = createServer(app);
     server.listen(PORT, '0.0.0.0', () => {
       console.log(`🚀 Server is running and listening on port ${PORT}`);
     });

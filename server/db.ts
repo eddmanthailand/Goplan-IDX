@@ -46,3 +46,6 @@ export async function initializeDb() {
   // Return the drizzle instance
   return drizzle(pool, { schema });
 }
+
+// Define the type of the db instance for easy use elsewhere
+export type DrizzleDb = Awaited<ReturnType<typeof initializeDb>>;
