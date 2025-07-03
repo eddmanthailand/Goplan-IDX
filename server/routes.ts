@@ -4,7 +4,7 @@ import { storage } from "./storage";
 import { pool } from "./db";
 import { insertUserSchema, insertTenantSchema, insertProductSchema, insertTransactionSchema, insertCustomerSchema, insertColorSchema, insertSizeSchema, insertWorkTypeSchema, insertDepartmentSchema, insertTeamSchema, insertWorkStepSchema, insertEmployeeSchema, insertWorkQueueSchema, insertProductionCapacitySchema, insertHolidaySchema, insertWorkOrderSchema, insertPermissionSchema, insertDailyWorkLogSchema, permissions, pageAccess, workOrderAttachments, insertNotificationSchema, insertNotificationRuleSchema, insertUserNotificationPreferenceSchema } from "@shared/schema";
 import { notificationService } from "./services/notificationService";
-import { GeminiService } from "./services/gemini";
+// import { GeminiService } from "./services/gemini"; // Temporarily disabled to fix build
 import { encrypt, decrypt } from "./encryption";
 import { db } from "./db";
 import { eq, sql } from "drizzle-orm";
@@ -18,7 +18,6 @@ import { fileStorageService } from "./fileStorage.js";
 
 // Initialize default permissions for all pages in the system
 async function initializeDefaultPermissions() {
-  // Skip initialization to avoid complex queries that cause Neon errors
   console.log('Skipping permission initialization to avoid database errors');
 }
 
@@ -112,67 +111,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
-  // ===== NEW AI CHATBOT ENDPOINT =====
+  // Temporarily disable AI Chatbot endpoint to allow the rest of the app to build and deploy.
   app.post("/api/chat/messages", requireAuth, async (req: any, res: any) => {
-    const { conversationId, message } = req.body;
-    const { tenantId, id: userId } = req.user;
-
-    if (!conversationId || !message) {
-        return res.status(400).json({ message: "conversationId and message are required" });
-    }
-
-    try {
-        // 1. Save the user's message
-        const userMessage = await storage.createChatMessage({
-            conversationId: parseInt(conversationId),
-            role: 'user',
-            content: message.trim(),
-        });
-
-        // 2. Initialize Gemini Service
-        const aiConfig = await storage.getAiConfiguration(tenantId);
-        const apiKey = aiConfig?.encryptedApiKey ? decrypt(aiConfig.encryptedApiKey) : undefined;
-        const geminiService = new GeminiService(apiKey);
-
-        // 3. Process the request to determine if it's an action or a simple chat
-        const aiResponse = await geminiService.processUserRequestToAction(message.trim(), tenantId);
-
-        let assistantContent: string;
-        let responseData: any = {};
-
-        if (aiResponse.action) {
-            // It's an action! The response is already a structured object.
-            assistantContent = JSON.stringify(aiResponse); // Store the full action object
-            responseData = aiResponse;
-        } else {
-            // It's a simple chat or an error message from the action workflow.
-            const simpleChatResponse = await geminiService.generateSimpleChatResponse(message.trim());
-            assistantContent = simpleChatResponse;
-            responseData = { message: simpleChatResponse, action: null };
-        }
-
-        // 4. Save the assistant's response
-        const assistantMessage = await storage.createChatMessage({
-            conversationId: parseInt(conversationId),
-            role: 'assistant',
-            content: assistantContent,
-        });
-
-        // 5. Send the structured response to the frontend
-        res.json({
-            userMessage,
-            assistantMessage: {
-              ...assistantMessage,
-              // The frontend expects the content to be the structured response object
-              // So, we replace the stringified content with the actual object for the response
-              content: responseData 
-            }
-        });
-
-    } catch (error) {
-        console.error("Chat processing error:", error);
-        res.status(500).json({ message: "Failed to process chat message" });
-    }
+    res.status(503).json({ 
+        message: "AI Chatbot is temporarily disabled for maintenance.",
+        action: null 
+    });
   });
 
 
