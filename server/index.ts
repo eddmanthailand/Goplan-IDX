@@ -39,6 +39,7 @@ import path from "path"; // Import path for serving static files in production
       host: "0.0.0.0", // Listen on all network interfaces, required for containers
     }, () => {
       // Use standard console.log as it has no external dependencies.
+      // Force a new commit with this comment.
       console.log(`🚀 Server is listening on port ${port}`);
     });
 
