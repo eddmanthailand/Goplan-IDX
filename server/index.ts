@@ -1,46 +1,50 @@
-// This is the main server entry point.
-import express from "express";
-import { createServer } from "http";
-import { registerRoutes } from "./routes";
-import path from "path"; // Import path for serving static files in production
+import express from 'express';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { initializeDb } from './db'; // Import the async initializer
+import { registerRoutes } from './routes'; // Re-importing the routes
+import { createServer } from 'http'; // Needed for registerRoutes
 
-(async () => {
+async function startServer() {
   try {
+    // 1. Initialize the database connection. This is now the first and most crucial step.
+    await initializeDb();
+    console.log('Database initialization complete.');
+
     const app = express();
-    
-    // The registerRoutes function sets up all API endpoints and returns the http.Server
+    const isProduction = process.env.NODE_ENV === 'production';
+    const PORT = process.env.PORT || 5000; // Keep port 5000 as per original setup
+
+    // 2. Register all your existing API routes. 
+    // The `registerRoutes` function will now have access to an initialized database.
     const server = await registerRoutes(app);
 
-    // In development, Vite is used to serve the frontend with HMR.
-    if (process.env.NODE_ENV === "development") {
-      // Dynamically import Vite modules ONLY in development.
-      const { setupVite } = await import("./vite.js");
-      await setupVite(app, server);
-    } 
-    // In production (on Google Cloud Run), we serve the pre-built static files.
-    else {
-      const clientDist = path.resolve(process.cwd(), "client/dist");
-      console.log(`[prod] Serving static files from: ${clientDist}`);
-      app.use(express.static(clientDist));
-      // This SPA fallback is crucial. It ensures any direct navigation to a client-side 
-      // route (e.g., /work-orders) is handled by serving the main index.html file.
-      app.get("*", (req, res) => {
-        res.sendFile(path.resolve(clientDist, "index.html"));
+    // --- Static File Serving (for Production) ---
+    if (isProduction) {
+      const __filename = fileURLToPath(import.meta.url);
+      const __dirname = path.dirname(__filename);
+      // Correcting the path to be relative to the current file's directory in the 'dist' folder
+      const clientBuildPath = path.join(__dirname, 'client/dist');
+      
+      console.log(`[Production] Serving static files from: ${clientBuildPath}`);
+      app.use(express.static(clientBuildPath));
+      
+      // For any other request, serve the index.html for SPA routing
+      app.get('*', (req, res) => {
+        res.sendFile(path.join(clientBuildPath, 'index.html'));
       });
     }
 
-    // The port is assigned by the PORT env var in Cloud Run.
-    const port = parseInt(process.env.PORT || "5000");
-
-    server.listen({
-      port,
-      host: "0.0.0.0", // Listen on all network interfaces.
-    }, () => {
-      console.log(`🚀 Server is listening on port ${port}`);
+    // 3. Start listening only after everything is set up
+    server.listen(PORT, '0.0.0.0', () => {
+      console.log(`🚀 Server is running and listening on port ${PORT}`);
     });
 
   } catch (error) {
-    console.error("❌ Failed to start server:", error);
-    process.exit(1);
+    console.error('❌ Failed to start server:', error);
+    process.exit(1); // Exit with an error code
   }
-})();
+}
+
+// Start the server
+startServer();
