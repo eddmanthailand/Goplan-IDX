@@ -109,23 +109,23 @@ JSON Response Format:
   }
 
   private async generateFinalAction(userMessage: string, intentResult: any, contextData: any) {
-    const prompt = `You are a helpful AI assistant. Your task is to generate a final response to the user.
+    const prompt = \`You are a helpful AI assistant. Your task is to generate a final response to the user.
 You will be given the user's original message, the analysis of their intent, and real data from the system.
 Your response MUST be a single JSON object containing a natural language message and an executable action payload.
 
 1.  **user_message**: The original request.
     \`\`\`json
-    ${JSON.stringify(userMessage)}
+    \${JSON.stringify(userMessage)}
     \`\`\`
 
 2.  **intent_analysis**: The initial understanding of the request.
     \`\`\`json
-    ${JSON.stringify(intentResult.action)}
+    \${JSON.stringify(intentResult.action)}
     \`\`\`
 
 3.  **system_data**: Real data fetched from the database to fulfill the request.
     \`\`\`json
-    ${JSON.stringify(contextData)}
+    \${JSON.stringify(contextData)}
     \`\`\`
 
 **Your Task:**
@@ -138,13 +138,13 @@ Based on all the information above, create the final JSON response.
 **Example Response for a successful request:**
 \`\`\`json
 {
-  "message": "รับทราบครับ กำลังจะเปลี่ยนสถานะของใบสั่งงาน ${contextData?.workOrder?.orderNumber} เป็น '${intentResult?.action?.parameters?.newStatus}' นะครับ",
+  "message": "รับทราบครับ กำลังจะเปลี่ยนสถานะของใบสั่งงาน \${contextData?.workOrder?.orderNumber} เป็น '\${intentResult?.action?.parameters?.newStatus}' นะครับ",
   "action": {
     "type": "UPDATE_WORK_ORDER_STATUS",
     "payload": {
-      "workOrderId": ${contextData?.workOrder?.id},
-      "orderNumber": "${contextData?.workOrder?.orderNumber}",
-      "newStatus": "${intentResult?.action?.parameters?.newStatus}"
+      "workOrderId": \${contextData?.workOrder?.id},
+      "orderNumber": "\${contextData?.workOrder?.orderNumber}",
+      "newStatus": "\${intentResult?.action?.parameters?.newStatus}"
     }
   }
 }
@@ -158,7 +158,7 @@ Based on all the information above, create the final JSON response.
 }
 \`\`\`
 
-Now, generate the final JSON response for the given request.`;
+Now, generate the final JSON response for the given request.\`;
 
     try {
       const result = await this.ai.getGenerativeModel({ model: "gemini-1.5-flash" }).generateContent(prompt);
@@ -181,15 +181,15 @@ Now, generate the final JSON response for the given request.`;
   ): Promise<string> {
     const conversationContext = conversationHistory
       .slice(-10)
-      .map(msg => `${msg.role === 'user' ? 'User' : 'Assistant'}: ${msg.content}`)
+      .map(msg => \`\${msg.role === 'user' ? 'User' : 'Assistant'}: \${msg.content}\`)
       .join('
-'); // THE ACTUAL FIX IS HERE: using a single backslash for the newline character.
+'); // Corrected to use a proper newline character in a string literal
 
-    const fullPrompt = `You are a helpful Thai-speaking AI assistant for a production management system.
+    const fullPrompt = \`You are a helpful Thai-speaking AI assistant for a production management system.
 Previous conversation:
-${conversationContext}
-Current user message: ${userMessage}
-Please provide a concise, helpful response in Thai. Be professional but friendly.`;
+\${conversationContext}
+Current user message: \${userMessage}
+Please provide a concise, helpful response in Thai. Be professional but friendly.\`;
     
     try {
       const result = await this.ai.getGenerativeModel({ model: "gemini-1.5-flash" }).generateContent(fullPrompt);
@@ -197,7 +197,7 @@ Please provide a concise, helpful response in Thai. Be professional but friendly
       return response.text() || "ขออภัย ไม่สามารถประมวลผลคำถามได้ในขณะนี้";
     } catch (error: any) {
       console.error("Gemini simple chat error:", error);
-      throw new Error(`Failed to generate response: ${error?.message || 'Unknown error'}`);
+      throw new Error(\`Failed to generate response: \${error?.message || 'Unknown error'}\`);
     }
   }
 }
