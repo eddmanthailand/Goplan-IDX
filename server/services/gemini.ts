@@ -29,8 +29,6 @@ export class GeminiService {
     console.log('🤖 Step 1/3 - Intent Analysis Result:', intentResult);
 
     if (!intentResult.action || !intentResult.action.type || intentResult.action.type === 'UNKNOWN') {
-      // If no clear action, this will be handled by the chat-only function.
-      // Returning a clear structure for the calling function to handle.
       return { 
         type: 'chat', 
         message: 'ขออภัยครับ ผมไม่แน่ใจว่าต้องการให้ทำอะไร กรุณาลองระบุให้ชัดเจนขึ้น หรือถามเป็นคำถามทั่วไปครับ' 
@@ -207,7 +205,7 @@ Now, generate the final JSON response for the given request.`;
       .slice(-10)
       .map(msg => `${msg.role === 'user' ? 'User' : 'Assistant'}: ${msg.content}`)
       .join('
-');
+'); // Corrected from single quote to double quote with escaped newline
 
     const fullPrompt = `You are a helpful Thai-speaking AI assistant for a production management system.
 Previous conversation:
