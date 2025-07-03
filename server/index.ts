@@ -33,6 +33,7 @@ import { setupVite, serveStatic, log } from "./vite";
       host: "0.0.0.0", // Listen on all network interfaces
     }, () => {
       // Corrected the template literal syntax - NO backslash before the backtick.
+      // This comment is added to force a new commit.
       log(`Server is listening on port ${port}`);
     });
 
