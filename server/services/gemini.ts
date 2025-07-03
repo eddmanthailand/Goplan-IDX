@@ -17,14 +17,7 @@ export class GeminiService {
 
   // --- NEW, FOCUSED ACTION GENERATION WORKFLOW ---
 
-  /**
-   * Orchestrates the entire AI action workflow from user message to executable action.
-   * 1. Analyzes intent and extracts parameters.
-   * 2. Fetches necessary data from the database.
-   * 3. Generates a final, executable action for the frontend.
-   */
   async processUserRequestToAction(userMessage: string, tenantId: number): Promise<any> {
-    // Step 1: Analyze intent and extract initial parameters
     const intentResult = await this.analyzeIntentAndExtractParams(userMessage);
     console.log('🤖 Step 1/3 - Intent Analysis Result:', intentResult);
 
@@ -35,7 +28,6 @@ export class GeminiService {
       };
     }
 
-    // Step 2: Fetch context-specific data from the database
     const contextData = await this.fetchContextualData(intentResult.action, tenantId);
     console.log('📄 Step 2/3 - Fetched Context Data:', contextData);
 
@@ -47,17 +39,12 @@ export class GeminiService {
         return { type: 'chat', message: 'ขออภัยครับ ผมไม่พบใบสั่งงานที่เกี่ยวข้องตามที่คุณร้องขอครับ' };
     }
 
-    // Step 3: Generate the final, executable action
     const finalAction = await this.generateFinalAction(userMessage, intentResult, contextData);
     console.log('✅ Step 3/3 - Generated Final Action:', finalAction);
     
     return finalAction;
   }
   
-  /**
-   * Step 1: Uses Gemini to analyze the user's message to determine their intent 
-   * and extract key parameters.
-   */
   private async analyzeIntentAndExtractParams(userMessage: string) {
     const prompt = `You are an expert at understanding user requests for a production management system.
 Analyze the following user message and respond ONLY with a JSON object.
@@ -97,9 +84,6 @@ JSON Response Format:
     }
   }
 
-  /**
-   * Step 2: Fetches relevant data from the database based on the identified action.
-   */
   private async fetchContextualData(action: any, tenantId: number) {
     const { parameters } = action;
     
@@ -107,14 +91,12 @@ JSON Response Format:
 
     try {
       if (!parameters.workOrderIdentifier) {
-        // If no ID, find the most recent work order for that tenant
         const latestWorkOrder = await db.query.workOrders.findFirst({
           where: eq(workOrders.tenantId, tenantId),
           orderBy: (workOrders, { desc }) => [desc(workOrders.createdAt)],
         });
         return { workOrder: latestWorkOrder };
       } else {
-        // If ID is provided, fetch that specific work order
         const specificWorkOrder = await db.query.workOrders.findFirst({
           where: eq(workOrders.orderNumber, parameters.workOrderIdentifier)
         });
@@ -126,10 +108,6 @@ JSON Response Format:
     }
   }
 
-  /**
-   * Step 3: Takes the user's message, the analyzed intent, and the fetched data
-   * to generate a final, polished, and executable action response.
-   */
   private async generateFinalAction(userMessage: string, intentResult: any, contextData: any) {
     const prompt = `You are a helpful AI assistant. Your task is to generate a final response to the user.
 You will be given the user's original message, the analysis of their intent, and real data from the system.
@@ -205,7 +183,7 @@ Now, generate the final JSON response for the given request.`;
       .slice(-10)
       .map(msg => `${msg.role === 'user' ? 'User' : 'Assistant'}: ${msg.content}`)
       .join('
-'); // Corrected from single quote to double quote with escaped newline
+'); // THE ACTUAL FIX IS HERE: using a single backslash for the newline character.
 
     const fullPrompt = `You are a helpful Thai-speaking AI assistant for a production management system.
 Previous conversation:
