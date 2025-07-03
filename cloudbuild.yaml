@@ -29,10 +29,9 @@ steps:
     - '--platform=managed'
     - '--allow-unauthenticated'
     - '--port=5000'
-    # This is the new, correct way to provide secrets and connection info
-    - '--set-secrets=DATABASE_URL=DATABASE_URL:latest,GEMINI_API_KEY=GEMINI_API_KEY:latest,MASTER_ENCRYPTION_KEY=MASTER_ENCRYPTION_KEY:latest,SESSION_SECRET=SESSION_SECRET:latest'
+    # Provide both the full DATABASE_URL and the individual components for the new connector
+    - '--set-secrets=DATABASE_URL=DATABASE_URL:latest,DB_USER=DB_USER:latest,DB_PASSWORD=DB_PASSWORD:latest,DB_NAME=DB_NAME:latest,GEMINI_API_KEY=GEMINI_API_KEY:latest,MASTER_ENCRYPTION_KEY=MASTER_ENCRYPTION_KEY:latest,SESSION_SECRET=SESSION_SECRET:latest'
     - '--set-env-vars=CLOUD_SQL_CONNECTION_NAME=gen-lang-client-0226111256:asia-southeast1:goplan-instance'
-    # This is still needed to establish the secure connection tunnel
     - '--add-cloudsql-instances=gen-lang-client-0226111256:asia-southeast1:goplan-instance'
 
 # Configuration for this build

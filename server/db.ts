@@ -1,30 +1,74 @@
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
-import { Connector, IpAddressTypes } from '@google-cloud/cloud-sql-connector';
-import { parse } from 'pg-connection-string';
+import { Connector } from '@google-cloud/cloud-sql-connector';
+import * as schema from "@shared/schema";
 
-// Check for the DATABASE_URL environment variable
-if (!process.env.DATABASE_URL) {
-  throw new Error("DATABASE_URL must be set for the application.");
+let dbInstance: any = null;
+let poolInstance: any = null;
+
+export async function initializeDb() {
+    if (dbInstance) {
+        console.log("Database already initialized.");
+        return;
+    }
+
+    console.log("Initializing database connection...");
+
+    try {
+        if (!process.env.DATABASE_URL) {
+            throw new Error("DATABASE_URL must be set.");
+        }
+        if (!process.env.CLOUD_SQL_CONNECTION_NAME && process.env.NODE_ENV === 'production') {
+            throw new Error("CLOUD_SQL_CONNECTION_NAME must be set in production.");
+        }
+
+        let client: Pool;
+
+        if (process.env.NODE_ENV === 'production') {
+            // Production: Use Cloud SQL Connector for secure connection
+            const connector = new Connector();
+            const clientOpts = await connector.getOptions({
+                instanceConnectionName: process.env.CLOUD_SQL_CONNECTION_NAME!,
+                ipType: 'PUBLIC',
+            });
+            client = new Pool({
+                ...clientOpts,
+                user: process.env.DB_USER,
+                password: process.env.DB_PASSWORD,
+                database: process.env.DB_NAME,
+                max: 5,
+            });
+        } else {
+            // Development: Connect directly using DATABASE_URL
+            client = new Pool({
+                connectionString: process.env.DATABASE_URL,
+            });
+        }
+
+        await client.connect();
+        console.log("Database connection successful.");
+
+        poolInstance = client;
+        dbInstance = drizzle(poolInstance, { schema });
+
+    } catch (error) {
+        console.error("❌ Failed to initialize database connection:", error);
+        process.exit(1); // Exit gracefully if DB connection fails
+    }
 }
 
-const config = parse(process.env.DATABASE_URL);
-const connector = new Connector();
+// Export a getter for the db instance
+export const getDb = () => {
+    if (!dbInstance) {
+        throw new Error("Database not initialized. Call initializeDb() first.");
+    }
+    return dbInstance;
+};
 
-const client = new Pool({
-  // The 'pg' library requires the following details to connect to the Cloud SQL instance
-  user: config.user,
-  password: config.password,
-  database: config.database,
-  // The 'getSocketPath' method creates a secure Unix socket connection to the instance
-  // This is the recommended and most secure way to connect from Cloud Run
-  host: await connector.getSocketPath({
-    instanceConnectionName: process.env.CLOUD_SQL_CONNECTION_NAME || "",
-    ipType: IpAddressTypes.PUBLIC,
-  }),
-});
-
-export const db = drizzle(client, { schema: {} });
-
-// We export the raw client as 'pool' to maintain compatibility with other parts of the app
-export const pool = client;
+// Export a getter for the pool instance
+export const getPool = () => {
+    if (!poolInstance) {
+        throw new Error("Database pool not initialized. Call initializeDb() first.");
+    }
+    return poolInstance;
+};
