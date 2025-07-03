@@ -25,7 +25,7 @@ async function startServer() {
     if (isProduction) {
       const __filename = fileURLToPath(import.meta.url);
       const __dirname = path.dirname(__filename);
-      // The path should be relative to the built 'dist' folder
+      // Correcting the path to be relative to the built 'dist' folder
       const clientBuildPath = path.join(__dirname, '../client/dist');
       
       console.log(`[Production] Serving static files from: ${clientBuildPath}`);

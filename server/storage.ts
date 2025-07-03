@@ -35,8 +35,10 @@ export class StorageService {
             where: and(eq(schema.users.username, username), isNull(schema.users.deletedAt))
         });
     }
-
-    // ... other storage methods would be refactored similarly ...
-    // e.g., async getCustomers(tenantId: string) { ... }
-    // All methods will now use `this.db` instead of the imported `db`.
+    
+    // Add all other storage methods here, using `this.db`
+    // For example:
+    // async getCustomers(tenantId: string) {
+    //   return this.db.query.customers.findMany({ ... });
+    // }
 }
