@@ -32,8 +32,8 @@ import { setupVite, serveStatic, log } from "./vite";
       port,
       host: "0.0.0.0", // Listen on all network interfaces
     }, () => {
-      // Corrected the template literal syntax
-      log(\`Server is listening on port \${port}\`);
+      // Corrected the template literal syntax - NO backslash before the backtick.
+      log(`Server is listening on port ${port}`);
     });
 
   } catch (error) {
