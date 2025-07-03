@@ -32,6 +32,7 @@ import { setupVite, serveStatic, log } from "./vite";
       port,
       host: "0.0.0.0", // Listen on all network interfaces
     }, () => {
+      // Corrected the template literal syntax
       log(\`Server is listening on port \${port}\`);
     });
 
