@@ -11,15 +11,11 @@ if (!process.env.DATABASE_URL) {
 }
 
 // Create a new connection pool using the standard 'pg' driver.
-// This is compatible with Google Cloud SQL and other standard PostgreSQL databases.
-// We configure it to use SSL for secure connections, which is required by Cloud SQL.
+// When running in Cloud Run with a Cloud SQL instance connected via --add-cloudsql-instances,
+// the 'pg' library automatically knows how to connect via the secure Unix socket.
+// No extra SSL configuration is needed as the connection is already secure.
 export const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: {
-    // This is often required for cloud database connections.
-    // It rejects unauthorized or self-signed certificates.
-    rejectUnauthorized: false, 
-  },
 });
 
 // Handle pool errors gracefully to prevent the application from crashing
