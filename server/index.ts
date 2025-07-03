@@ -5,7 +5,9 @@
 import express from "express";
 import { createServer } from "http";
 import { registerRoutes } from "./routes";
-import { setupVite, serveStatic, log } from "./vite";
+// Vite is a dev dependency, so it's only imported in development.
+// We use a dynamic import to prevent it from being included in the production bundle.
+// import { setupVite, serveStatic, log } from "./vite"; 
 
 (async () => {
   try {
@@ -17,23 +19,24 @@ import { setupVite, serveStatic, log } from "./vite";
     // In development, Vite handles HMR (Hot Module Replacement) and serves the frontend.
     // In production, we serve the pre-built static files from client/dist.
     if (process.env.NODE_ENV === "development") {
+      const { setupVite } = await import("./vite.js");
       await setupVite(app, server);
     } else {
+      const { serveStatic } = await import("./vite.js");
       serveStatic(app);
     }
 
-    // THE FIX:
     // In a cloud environment like Google Cloud Run, the port is assigned dynamically
     // via the PORT environment variable. We must listen on this port.
     // We fall back to 5000 for local development if process.env.PORT is not set.
     const port = parseInt(process.env.PORT || "5000");
+    const { log } = await import("./vite.js");
 
     server.listen({
       port,
       host: "0.0.0.0", // Listen on all network interfaces
     }, () => {
       // Corrected the template literal syntax - NO backslash before the backtick.
-      // This comment is added to force a new commit.
       log(`Server is listening on port ${port}`);
     });
 
