@@ -183,7 +183,7 @@ Now, generate the final JSON response for the given request.\`;
       .slice(-10)
       .map(msg => \`\${msg.role === 'user' ? 'User' : 'Assistant'}: \${msg.content}\`)
       .join('
-'); // Corrected to use a proper newline character in a string literal
+');
 
     const fullPrompt = \`You are a helpful Thai-speaking AI assistant for a production management system.
 Previous conversation:
